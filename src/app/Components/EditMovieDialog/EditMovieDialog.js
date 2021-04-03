@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import Button from "@material-ui/core/Button";
 import TextField from "@material-ui/core/TextField";
 import Dialog from "@material-ui/core/Dialog";
@@ -7,7 +7,8 @@ import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import MenuItem from "@material-ui/core/MenuItem";
 import Select from "@material-ui/core/Select";
-import InputLabel from "@material-ui/core/InputLabel";
+import FormControl from "@material-ui/core/FormControl";
+import FormHelperText from "@material-ui/core/FormHelperText";
 import {
   selectIsEditMovieDialogVisible,
   dialogEditMovie
@@ -18,57 +19,66 @@ import {
 } from "../../../features/movies/moviesSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { unwrapResult } from "@reduxjs/toolkit";
+import { useFormik } from "formik";
+import { validationSchema } from "../../yup";
 
-export default function EditMovieDialog(props) {
+export default function EditMovieDialog() {
   const isEditMovieDialogVisible = useSelector(selectIsEditMovieDialogVisible);
   const movie = useSelector(selectEditedMovie);
-
-  const [title, setTitle] = useState("");
-  const [posterPath, setPosterPath] = useState("");
-  const [overview, setOverview] = useState("");
-  const [runtime, setRuntime] = useState(0);
-  const [releaseDate, setReleaseDate] = useState("");
   const dispatch = useDispatch();
+
+  const formik = useFormik({
+    initialValues: {
+      title: !!movie ? movie.title : "",
+      movieUrl: !!movie ? movie.movieUrl : "",
+      overview: !!movie ? movie.overview : "",
+      runtime: !!movie ? movie.runtime : 90,
+      releaseDate: !!movie ? movie.release_date : "2014-03-11",
+      genres: !!movie ? movie.genres : []
+    },
+    validationSchema: validationSchema,
+    onSubmit: async (values) => {
+      try {
+        const resultAction = await dispatch(
+          editMovie({
+            id: movie.id,
+            tagline: movie.tagline,
+            vote_average: movie.vote_average,
+            vote_count: movie.vote_count,
+            budget: movie.budget,
+            revenue: movie.revenue,
+            genres: values.genres,
+            title: values.title,
+            release_date: values.releaseDate,
+            poster_path: values.movieUrl,
+            overview: values.overview,
+            runtime: parseInt(values.runtime, 10)
+          })
+        );
+        unwrapResult(resultAction);
+        handleClose();
+      } catch (err) {
+        alert("Failed to edit a movie: " + err.message);
+      }
+    }
+  });
 
   useEffect(() => {
     if (!!movie) {
-      setTitle(movie.title);
-      setPosterPath(movie.poster_path);
-      setOverview(movie.overview);
-      setRuntime(movie.runtime);
-      setReleaseDate(movie.release_date);
+      formik.setValues({
+        title: movie.title,
+        movieUrl: movie.poster_path,
+        overview: movie.overview,
+        runtime: movie.runtime,
+        releaseDate: movie.release_date,
+        genres: movie.genres
+      });
     }
   }, [movie]);
 
   function handleClose(e) {
     dispatch(dialogEditMovie("close"));
   }
-
-  const handleSubmit = async (e) => {
-    try {
-      const resultAction = await dispatch(
-        editMovie({
-          id: movie.id,
-          tagline: movie.tagline,
-          vote_average: movie.vote_average,
-          vote_count: movie.vote_count,
-          budget: movie.budget,
-          revenue: movie.revenue,
-          genres: movie.genres,
-
-          title: title,
-          release_date: releaseDate,
-          poster_path: posterPath,
-          overview: overview,
-          runtime: parseInt(runtime, 10)
-        })
-      );
-      unwrapResult(resultAction);
-      handleClose(e);
-    } catch (err) {
-      alert("Failed to edit a movie: " + err.message);
-    }
-  };
 
   return (
     <div>
@@ -83,78 +93,111 @@ export default function EditMovieDialog(props) {
             <TextField
               autoFocus
               margin="dense"
-              id="name"
+              id="title"
+              name="title"
               label="Title"
+              placeholder="Enter title"
               type="text"
               variant="outlined"
               fullWidth
-              defaultValue={!!movie ? movie.title : ""}
-              onChange={(e) => {
-                setTitle(e.target.value);
-              }}
+              value={formik.values.title}
+              onChange={formik.handleChange}
+              error={formik.touched.title && Boolean(formik.errors.title)}
+              helperText={formik.touched.title && formik.errors.title}
             />
             <TextField
               margin="dense"
-              id="date"
+              id="releaseDate"
+              name="releaseDate"
+              label="Release date"
               type="date"
               variant="outlined"
               fullWidth
-              defaultValue={!!movie ? movie.release_date : ""}
-              onChange={(e) => {
-                setReleaseDate(e.target.value);
-              }}
+              value={formik.values.releaseDate}
+              onChange={formik.handleChange}
+              error={
+                formik.touched.releaseDate && Boolean(formik.errors.releaseDate)
+              }
+              helperText={
+                formik.touched.releaseDate && formik.errors.releaseDate
+              }
             />
             <TextField
               margin="dense"
               id="movieUrl"
+              name="movieUrl"
               label="Movie URL"
               type="url"
               variant="outlined"
               fullWidth
-              defaultValue={!!movie ? movie.poster_path : ""}
-              onChange={(e) => {
-                setPosterPath(e.target.value);
-              }}
+              placeholder="Enter movie URL"
+              value={formik.values.movieUrl}
+              onChange={formik.handleChange}
+              error={formik.touched.movieUrl && Boolean(formik.errors.movieUrl)}
+              helperText={formik.touched.movieUrl && formik.errors.movieUrl}
             />
-            <InputLabel>Genre</InputLabel>
-            <Select
-              margin="dense"
-              label="Genre"
-              variant="outlined"
-              fullWidth
-              //multiple
-              value={1}
-              // value={movie.genres}
-            >
-              <MenuItem value={0}>Comedy</MenuItem>
-              <MenuItem value={1}>Drama</MenuItem>
-              <MenuItem value={2}>Romance</MenuItem>
-            </Select>
+            <FormControl fullWidth>
+              <Select
+                margin="dense"
+                id="genres"
+                name="genres"
+                variant="outlined"
+                fullWidth
+                multiple
+                required
+                value={formik.values.genres}
+                onChange={formik.handleChange}
+                error={formik.touched.genres && Boolean(formik.errors.genres)}
+              >
+                <MenuItem value="Action">Action</MenuItem>
+                <MenuItem value="Adventure">Adventure</MenuItem>
+                <MenuItem value="Animation">Animation</MenuItem>
+                <MenuItem value="Drama">Drama</MenuItem>
+                <MenuItem value="Comedy">Comedy</MenuItem>
+                <MenuItem value="Crime">Crime</MenuItem>
+                <MenuItem value="Documentary">Documentary</MenuItem>
+                <MenuItem value="Fantasy">Fantasy</MenuItem>
+                <MenuItem value="Family">Family</MenuItem>
+                <MenuItem value="Horror">Horror</MenuItem>
+                <MenuItem value="Romance">Romance</MenuItem>
+                <MenuItem value="Science Fiction">Science Fiction</MenuItem>
+                <MenuItem value="Thriller">Thriller</MenuItem>
+                <MenuItem value="War">War</MenuItem>
+              </Select>
+              <FormHelperText
+                error={formik.touched.genres && Boolean(formik.errors.genres)}
+              >
+                {formik.touched.genres && formik.errors.genres}
+              </FormHelperText>
+            </FormControl>
+
             <TextField
               margin="dense"
               id="overview"
+              name="overview"
               label="Overview"
               type="text"
               variant="outlined"
               placeholder="Overview text goes here"
               fullWidth
-              defaultValue={!!movie ? movie.overview : ""}
-              onChange={(e) => {
-                setOverview(e.target.value);
-              }}
+              value={formik.values.overview}
+              onChange={formik.handleChange}
+              error={formik.touched.overview && Boolean(formik.errors.overview)}
+              helperText={formik.touched.overview && formik.errors.overview}
             />
             <TextField
               margin="dense"
               id="runtime"
+              name="runtime"
               label="Runtime"
               type="text"
               variant="outlined"
               placeholder="Runtime text goes here"
               fullWidth
-              defaultValue={!!movie ? movie.runtime : ""}
-              onChange={(e) => {
-                setRuntime(e.target.value);
-              }}
+              value={formik.values.runtime}
+              onChange={formik.handleChange}
+              error={formik.touched.runtime && Boolean(formik.errors.runtime)}
+              helperText={formik.touched.runtime && formik.errors.runtime}
             />
           </form>
         </DialogContent>
@@ -162,7 +205,7 @@ export default function EditMovieDialog(props) {
           <Button onClick={handleClose} color="primary">
             Reset
           </Button>
-          <Button onClick={handleSubmit} color="primary">
+          <Button onClick={formik.handleSubmit} color="primary">
             Save
           </Button>
         </DialogActions>
