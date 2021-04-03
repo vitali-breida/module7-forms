@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import Button from "@material-ui/core/Button";
 import TextField from "@material-ui/core/TextField";
 import Dialog from "@material-ui/core/Dialog";
@@ -6,48 +6,57 @@ import DialogActions from "@material-ui/core/DialogActions";
 import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import MenuItem from "@material-ui/core/MenuItem";
+import Select from "@material-ui/core/Select";
 import { useDispatch, useSelector } from "react-redux";
 import {
   selectIsAddMovieDialogVisible,
   dialogAddMovie
 } from "../../../features/dialogs/dialogsSlice";
 import { addMovie } from "../../../features/movies/moviesSlice";
-
 import { unwrapResult } from "@reduxjs/toolkit";
+import { useFormik } from "formik";
+import { FormControl, FormHelperText } from "@material-ui/core";
+import { validationSchema } from "../../yup";
 
 export default function AddMovieDialog(props) {
   const isAddMovieDialogVisible = useSelector(selectIsAddMovieDialogVisible);
   const dispatch = useDispatch();
-
-  const [title, setTitle] = useState("");
-  const [posterPath, setPosterPath] = useState("");
-  const [overview, setOverview] = useState("");
-  const [runtime, setRuntime] = useState(90);
-  const [releaseDate, setReleaseDate] = useState("");
+  const formik = useFormik({
+    initialValues: {
+      title: "",
+      movieUrl: "",
+      overview: "",
+      runtime: 90,
+      releaseDate: "2014-03-11",
+      genres: ["Drama"]
+    },
+    validationSchema: validationSchema,
+    onSubmit: async (values) => {
+      // alert(JSON.stringify(values, null, 2));
+      try {
+        const resultAction = await dispatch(
+          addMovie({
+            tagline: "Default tagline",
+            genres: values.genres,
+            title: values.title,
+            release_date: values.releaseDate,
+            poster_path: values.movieUrl,
+            overview: values.overview,
+            runtime: values.runtime
+          })
+        );
+        unwrapResult(resultAction);
+        handleClose();
+      } catch (err) {
+        alert("Failed to add a movie: " + err.message);
+      }
+    }
+  });
 
   const handleClose = (e) => {
     dispatch(dialogAddMovie("close"));
   };
 
-  const handleSubmit = async (e) => {
-    try {
-      const resultAction = await dispatch(
-        addMovie({
-          tagline: "Default tagline",
-          genres: ["Drama"],
-          title: title,
-          release_date: releaseDate,
-          poster_path: posterPath,
-          overview: overview,
-          runtime: parseInt(runtime, 10)
-        })
-      );
-      unwrapResult(resultAction);
-      handleClose(e);
-    } catch (err) {
-      alert("Failed to add a movie: " + err.message);
-    }
-  };
   return (
     <div>
       <Dialog
@@ -61,79 +70,102 @@ export default function AddMovieDialog(props) {
             <TextField
               autoFocus
               margin="dense"
-              id="name"
+              id="title"
+              name="title"
               label="Title"
+              placeholder="Enter title"
               type="text"
               variant="outlined"
               fullWidth
-              defaultValue={title}
-              onChange={(e) => {
-                setTitle(e.target.value);
-              }}
+              value={formik.values.title}
+              onChange={formik.handleChange}
+              error={formik.touched.title && Boolean(formik.errors.title)}
+              helperText={formik.touched.title && formik.errors.title}
             />
             <TextField
               margin="dense"
-              id="date"
+              id="releaseDate"
+              name="releaseDate"
+              label="Release date"
               type="date"
               variant="outlined"
               fullWidth
-              defautValue={releaseDate}
-              onChange={(e) => {
-                setReleaseDate(e.target.value);
-              }}
+              value={formik.values.releaseDate}
+              onChange={formik.handleChange}
+              error={
+                formik.touched.releaseDate && Boolean(formik.errors.releaseDate)
+              }
+              helperText={
+                formik.touched.releaseDate && formik.errors.releaseDate
+              }
             />
             <TextField
               margin="dense"
               id="movieUrl"
+              name="movieUrl"
               label="Movie URL"
               type="url"
               variant="outlined"
               fullWidth
-              defaultValue={posterPath}
-              onChange={(e) => {
-                setPosterPath(e.target.value);
-              }}
+              placeholder="Enter movie URL"
+              value={formik.values.movieUrl}
+              onChange={formik.handleChange}
+              error={formik.touched.movieUrl && Boolean(formik.errors.movieUrl)}
+              helperText={formik.touched.movieUrl && formik.errors.movieUrl}
             />
-            <TextField
-              select
-              margin="dense"
-              id="name"
-              label="Genre"
-              variant="outlined"
-              fullWidth
-              // defaultalue={1}
-              value={2}
-            >
-              <MenuItem value={1}>Crime</MenuItem>
-              <MenuItem value={2}>Documentary</MenuItem>
-              <MenuItem value={3}>Horror</MenuItem>
-              <MenuItem value={4}>Comedy</MenuItem>
-            </TextField>
+            <FormControl fullWidth>
+              <Select
+                margin="dense"
+                id="genres"
+                name="genres"
+                variant="outlined"
+                fullWidth
+                multiple
+                required
+                value={formik.values.genres}
+                onChange={formik.handleChange}
+                error={formik.touched.genres && Boolean(formik.errors.genres)}
+              >
+                <MenuItem value="Drama">Drama</MenuItem>
+                <MenuItem value="Crime">Crime</MenuItem>
+                <MenuItem value="Documentary">Documentary</MenuItem>
+                <MenuItem value="Horror">Horror</MenuItem>
+                <MenuItem value="Comedy">Comedy</MenuItem>
+              </Select>
+              <FormHelperText
+                error={formik.touched.genres && Boolean(formik.errors.genres)}
+              >
+                {formik.touched.genres && formik.errors.genres}
+              </FormHelperText>
+            </FormControl>
+
             <TextField
               margin="dense"
               id="overview"
+              name="overview"
               label="Overview"
               type="text"
               variant="outlined"
               placeholder="Overview text goes here"
               fullWidth
-              defaultValue={overview}
-              onChange={(e) => {
-                setOverview(e.target.value);
-              }}
+              value={formik.values.overview}
+              onChange={formik.handleChange}
+              error={formik.touched.overview && Boolean(formik.errors.overview)}
+              helperText={formik.touched.overview && formik.errors.overview}
             />
             <TextField
               margin="dense"
               id="runtime"
+              name="runtime"
               label="Runtime"
               type="text"
               variant="outlined"
               placeholder="Runtime text goes here"
               fullWidth
-              defaultValue={runtime}
-              onChange={(e) => {
-                setRuntime(e.target.value);
-              }}
+              value={formik.values.runtime}
+              onChange={formik.handleChange}
+              error={formik.touched.runtime && Boolean(formik.errors.runtime)}
+              helperText={formik.touched.runtime && formik.errors.runtime}
             />
           </form>
         </DialogContent>
@@ -141,7 +173,7 @@ export default function AddMovieDialog(props) {
           <Button onClick={handleClose} color="primary">
             Reset
           </Button>
-          <Button onClick={handleSubmit} color="primary">
+          <Button onClick={formik.handleSubmit} color="primary">
             Submit
           </Button>
         </DialogActions>
