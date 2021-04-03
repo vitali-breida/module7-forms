@@ -2,6 +2,12 @@ import TextField from "@material-ui/core/TextField";
 import Box from "@material-ui/core/Box";
 import Button from "@material-ui/core/Button";
 import { styled } from "@material-ui/core/styles";
+import { useSelector, useDispatch } from "react-redux";
+import { useState } from "react";
+import {
+  searchMovies,
+  fetchMovies
+} from "../../../features/movies/moviesSlice";
 
 const MyButton = styled(Button)({
   background: "linear-gradient(45deg, #FE6B8B 30%, #FF8E53 90%)",
@@ -14,12 +20,27 @@ const MyButton = styled(Button)({
 });
 
 export default function Search() {
+  const search = useSelector((state) => state.movies.search);
+  const [text, setText] = useState(search);
+  const dispatch = useDispatch();
+
+  const handleSearch = (e) => {
+    dispatch(searchMovies(text));
+    dispatch(fetchMovies());
+  };
   return (
     <Box display="flex" justifyContent="flex-end">
       <Box flexGrow={1}>
-        <TextField fullWidth placeholder="What do want to watch?" />
+        <TextField
+          fullWidth
+          placeholder="What do you want to watch?"
+          defaultValue={text}
+          onChange={(e) => {
+            setText(e.target.value);
+          }}
+        />
       </Box>
-      <MyButton>Search</MyButton>
+      <MyButton onClick={handleSearch}>Search</MyButton>
     </Box>
   );
 }

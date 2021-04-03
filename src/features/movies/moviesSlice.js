@@ -22,6 +22,12 @@ export const fetchMovies = createAsyncThunk("movies/fetchMovies", async () => {
     url += "&filter=" + filterBy.join("%2C");
   }
 
+  //search
+  let search = state.movies.search;
+  if (search !== "") {
+    url += "&search=" + search + "&searchBy=title";
+  }
+
   // pagination
   url += "&offset=0&limit=6";
 
@@ -79,11 +85,15 @@ export const moviesSlice = createSlice({
     list: [],
     sortBy: sortByDefault,
     totalCount: 0,
-    filterBy: []
+    filterBy: [],
+    search: ""
   },
   reducers: {
     sortMovies: (state, action) => {
       state.sortBy = action.payload;
+    },
+    searchMovies: (state, action) => {
+      state.search = action.payload;
     },
     filterMovies: (state, action) => {
       let f = action.payload;
@@ -126,7 +136,12 @@ export const moviesSlice = createSlice({
 });
 
 // action creators
-export const { sortMovies, filterMovies, skipFiltering } = moviesSlice.actions;
+export const {
+  sortMovies,
+  filterMovies,
+  skipFiltering,
+  searchMovies
+} = moviesSlice.actions;
 
 // Returns selected movie from the state
 export const selectSelectedMovie = (state) =>
