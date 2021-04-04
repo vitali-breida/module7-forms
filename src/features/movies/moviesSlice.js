@@ -25,7 +25,7 @@ export const fetchMovies = createAsyncThunk("movies/fetchMovies", async () => {
   //search
   let search = state.movies.search;
   if (search !== "") {
-    url += "&search=" + search + "&searchBy=title";
+    url += "&search=" + encodeURIComponent(search) + "&searchBy=title";
   }
 
   // pagination

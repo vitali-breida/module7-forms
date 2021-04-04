@@ -1,8 +1,8 @@
-# module6 (Flux, Redux)
+# module7 (Forms)
 
-- Forked from the https://github.com/vitali-breida/module5-hooks
+- Forked from the https://github.com/vitali-breida/module6-flux-redux
 - Material UI is used
-- All state is processed by Redux
-- Redux Toolkit/Thunk/async/await are used
-- CRUD/sorting/filtering/validation are implemented with redux
-- Can be checked directly https://ykil9.csb.app/
+- formik, yup are used for AddMovie, EditMovie validation/submit
+- Search by keyword added
+- Multiselect for "genres" is implemented
+- Can be verified directly from https://sjiuw.csb.app/
